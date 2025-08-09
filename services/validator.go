@@ -49,15 +49,16 @@ func isHttpURL(u *url.URL) bool {
 
 func isPublicIP(u *url.URL) bool {
 
-	ip := net.ParseIP(u.Hostname())
-	if ip == nil {
+	ips, err := net.LookupIP(u.Hostname())
+	if err != nil || len(ips) == 0 {
 		return false
 	}
 
-	if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() {
-		return false
+	for _, ip := range ips {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() {
+			return false
+		}
 	}
-
 	return true
 }
 
