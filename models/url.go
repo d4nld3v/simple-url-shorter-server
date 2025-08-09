@@ -1,20 +1,24 @@
-package services
+package models
 
 import (
 	"crypto/md5"
 	"encoding/base64"
 	"net/url"
 	"strings"
+
+	"github.com/d4nld3v/url-shortener-go/services"
 )
 
 type ShortenedURL struct {
-	url       *url.URL
-	shortenID string
+	originalURL *url.URL
+	shortenID   string
+	//TODO: generate shortened URL
+	//shortenedUrl string
 }
 
-func NewShortenedURL(originalURL string) (*ShortenedURL, error) {
+func NewShortenedURL(rawurl string) (*ShortenedURL, error) {
 
-	u, err := IsValidURL(originalURL)
+	u, err := services.IsValidURL(rawurl)
 	if err != nil || u == nil {
 		return nil, err
 	}
@@ -22,8 +26,8 @@ func NewShortenedURL(originalURL string) (*ShortenedURL, error) {
 	shortenID := ShortenURL(u)
 
 	return &ShortenedURL{
-		url:       u,
-		shortenID: shortenID,
+		originalURL: u,
+		shortenID:   shortenID,
 	}, nil
 }
 
@@ -42,10 +46,10 @@ func ShortenURL(url *url.URL) string {
 }
 
 func (s *ShortenedURL) GetOriginalURL() string {
-	if s.url == nil {
+	if s.originalURL == nil {
 		return ""
 	}
-	return s.url.String()
+	return s.originalURL.String()
 }
 
 func (s *ShortenedURL) GetShortID() string {
