@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	db "github.com/d4nld3v/url-shortener-go/database"
 	"github.com/d4nld3v/url-shortener-go/models"
 )
 
@@ -25,6 +26,17 @@ func main() {
 	}
 
 	fmt.Println("Shortened id:", shortenedURL.GetShortID())
+
+	err = db.InitDatabase()
+	if err != nil {
+		fmt.Println("Error initializing database:", err)
+		return
+	}
+
+	fmt.Println("Database initialized successfully")
+
+	defer db.CloseDatabase()
+
 }
 
 // store the original URL and the unique ID in a database
