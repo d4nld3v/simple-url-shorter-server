@@ -119,7 +119,8 @@ func TestIsValidURL(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		valid, err := IsValidURL(test.url)
+		u, err := IsValidURL(test.url)
+		valid := u != nil
 
 		if valid != test.expectedValid {
 			t.Errorf("IsValidURL(%s) validity = %v; want %v", test.url, valid, test.expectedValid)

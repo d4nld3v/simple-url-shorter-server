@@ -8,35 +8,35 @@ import (
 	"time"
 )
 
-func IsValidURL(raw string) (bool, error) {
+func IsValidURL(raw string) (*url.URL, error) {
 
 	if len(raw) > 2048 {
-		return false, fmt.Errorf("url is too long")
+		return nil, fmt.Errorf("url is too long")
 	}
 
 	u, err := url.ParseRequestURI(raw)
 
 	if err != nil {
-		return false, fmt.Errorf("url is null: %w", err)
+		return nil, fmt.Errorf("url is null: %w", err)
 	}
 
 	if u.Scheme == "" || u.Host == "" {
-		return false, fmt.Errorf("url not has scheme or host")
+		return nil, fmt.Errorf("url not has scheme or host")
 	}
 
 	if !isHttpURL(u) {
-		return false, fmt.Errorf("url is not http or https")
+		return nil, fmt.Errorf("url is not http or https")
 	}
 
 	if !isPublicIP(u) {
-		return false, fmt.Errorf("url is not public IP")
+		return nil, fmt.Errorf("url is not public IP")
 	}
 
 	if !isAvailable(u) {
-		return false, fmt.Errorf("url is not available: %w", err)
+		return nil, fmt.Errorf("url is not available: %w", err)
 	}
 
-	return true, nil
+	return u, nil
 }
 
 func isHttpURL(u *url.URL) bool {

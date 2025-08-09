@@ -18,18 +18,14 @@ func main() {
 
 	fmt.Println("Original URL:", url)
 
-	// check if the URL is valid
-	valid, err := services.IsValidURL(url)
-	if err != nil {
-		fmt.Println("Error validating URL:", err)
+	shortenedURL := services.NewShortenedURL(url)
+	if shortenedURL == nil {
+		fmt.Println("Invalid URL")
 		return
 	}
 
-	if valid {
-		fmt.Println("URL is valid")
-	}
-	// generate a unique ID for the URL (shorten the URL)
-	// store the original URL and the unique ID in a database
-	// redirect to the original URL when accessing the unique ID
-
+	fmt.Println("Shortened id:", shortenedURL.GetShortID())
 }
+
+// store the original URL and the unique ID in a database
+// redirect to the original URL when accessing the unique ID

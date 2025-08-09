@@ -1,15 +1,53 @@
 package services
 
-func GetOriginalURL(shortID string) (string, error) {
+import (
+	"crypto/md5"
+	"encoding/base64"
+	"net/url"
+	"strings"
+)
 
-	// consulta la base de datos para obtener la url original
-	// a partir de la id unica
-
-	//devolver la url original
-	return "", nil
+type ShortenedURL struct {
+	url       *url.URL
+	shortenID string
 }
 
-func ShortenURL(originalURL string) (string, error) {
+func NewShortenedURL(originalURL string) *ShortenedURL {
 
-	return "", nil
+	u, err := IsValidURL(originalURL)
+	if err != nil || u == nil {
+		return nil
+	}
+
+	shortenID := ShortenURL(u)
+
+	return &ShortenedURL{
+		url:       u,
+		shortenID: shortenID,
+	}
+}
+
+func ShortenURL(url *url.URL) string {
+	// Crear hash MD5 de la URL completa
+	hash := md5.Sum([]byte(url.String()))
+
+	// Codificar en base64 para obtener caracteres alfanuméricos
+	encoded := base64.URLEncoding.EncodeToString(hash[:])
+
+	shortID := encoded[:8]
+	shortID = strings.ReplaceAll(shortID, "-", "x")
+	shortID = strings.ReplaceAll(shortID, "_", "y")
+
+	return shortID
+}
+
+func (s *ShortenedURL) GetOriginalURL() string {
+	if s.url == nil {
+		return ""
+	}
+	return s.url.String()
+}
+
+func (s *ShortenedURL) GetShortID() string {
+	return s.shortenID
 }
