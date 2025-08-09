@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/d4nld3v/url-shortener-go/crud"
 	db "github.com/d4nld3v/url-shortener-go/database"
 	"github.com/d4nld3v/url-shortener-go/models"
 )
@@ -34,6 +35,13 @@ func main() {
 	}
 
 	fmt.Println("Database initialized successfully")
+
+	err = crud.SaveShortenedURL(shortenedURL)
+	if err != nil {
+		fmt.Println("Error saving shortened URL:", err)
+		return
+
+	fmt.Println("Shortened URL saved successfully")
 
 	defer db.CloseDatabase()
 
