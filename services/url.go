@@ -12,11 +12,11 @@ type ShortenedURL struct {
 	shortenID string
 }
 
-func NewShortenedURL(originalURL string) *ShortenedURL {
+func NewShortenedURL(originalURL string) (*ShortenedURL, error) {
 
 	u, err := IsValidURL(originalURL)
 	if err != nil || u == nil {
-		return nil
+		return nil, err
 	}
 
 	shortenID := ShortenURL(u)
@@ -24,7 +24,7 @@ func NewShortenedURL(originalURL string) *ShortenedURL {
 	return &ShortenedURL{
 		url:       u,
 		shortenID: shortenID,
-	}
+	}, nil
 }
 
 func ShortenURL(url *url.URL) string {

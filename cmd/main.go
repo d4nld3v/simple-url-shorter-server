@@ -18,14 +18,17 @@ func main() {
 
 	fmt.Println("Original URL:", url)
 
-	shortenedURL := services.NewShortenedURL(url)
-	if shortenedURL == nil {
-		fmt.Println("Invalid URL")
+	shortenedURL, err := services.NewShortenedURL(url)
+	if err != nil {
+		fmt.Println("Error:", err)
 		return
 	}
 
 	fmt.Println("Shortened id:", shortenedURL.GetShortID())
 }
+
+// store the original URL and the unique ID in a database
+// redirect to the original URL when accessing the unique ID
 
 // store the original URL and the unique ID in a database
 // redirect to the original URL when accessing the unique ID
