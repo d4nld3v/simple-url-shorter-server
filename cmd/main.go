@@ -16,7 +16,9 @@ func main() {
 
 	url := os.Args[1]
 
-	// validar la url
+	fmt.Println("Original URL:", url)
+
+	// check if the URL is valid
 	valid, err := services.IsValidURL(url)
 	if err != nil {
 		fmt.Println("Error validating URL:", err)
@@ -26,9 +28,8 @@ func main() {
 	if valid {
 		fmt.Println("URL is valid")
 	}
-	//generar una id unica para la url ( acortar la url )
-	//almacenar la url original y la id unica en una base de datos
-	//redirigir a la url original cuando se accede a la id unica
+	// generate a unique ID for the URL (shorten the URL)
+	// store the original URL and the unique ID in a database
+	// redirect to the original URL when accessing the unique ID
 
-	fmt.Println("Original URL:", url)
 }
