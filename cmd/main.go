@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/d4nld3v/url-shortener-go/services"
+	"github.com/d4nld3v/url-shortener-go/models"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 
 	fmt.Println("Original URL:", url)
 
-	shortenedURL, err := services.NewShortenedURL(url)
+	shortenedURL, err := models.NewShortenedURL(url)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
