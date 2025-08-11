@@ -1,4 +1,4 @@
-package db
+package config
 
 import (
 	"database/sql"
@@ -19,7 +19,9 @@ func InitDatabase() error {
 	createTableSQL := `CREATE TABLE IF NOT EXISTS urls (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		original_url TEXT NOT NULL,
-		shorten_id TEXT NOT NULL UNIQUE
+		shorten_id TEXT NOT NULL UNIQUE,
+		clicks INTEGER DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
 	_, err = DB.Exec(createTableSQL)
 	if err != nil {
