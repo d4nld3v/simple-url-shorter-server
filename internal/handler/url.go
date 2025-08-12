@@ -66,6 +66,20 @@ func handlePostShortenURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGetShortenURL(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("GET Shorten URL handler"))
+
+	shortID := r.URL.Query().Get("id")
+
+	if shortID == "" {
+		http.Error(w, "Short ID is required", http.StatusBadRequest)
+		return
+	}
+
+	u, err := services.GetShortenedURL(shortID)
+
+	if err != nil || u == nil {
+		http.Error(w, "Failed to retrieve shortened URL: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, u.GetOriginalURL(), http.StatusFound)
 }

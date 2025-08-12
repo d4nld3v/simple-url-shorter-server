@@ -63,3 +63,47 @@ func SaveShortenedURL(url *URL) error {
 	defer config.CloseDatabase()
 	return e
 }
+
+func GetURLByShortID(shortenID string) (*URL, error) {
+	err := config.InitDatabase()
+	if err != nil {
+		fmt.Println("Error initializing database:", err)
+		return nil, err
+	}
+
+	fmt.Println("Database initialized successfully")
+
+	row := config.DB.QueryRow("SELECT original_url, shorten_id, clicks, created_at FROM urls WHERE shorten_id = ?", shortenID)
+
+	var originalURL string
+	var clicks int
+	var createdAt time.Time
+
+	err = row.Scan(&originalURL, &shortenID, &clicks, &createdAt)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedURL, parseErr := url.Parse(originalURL)
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
+	return NewUrl(shortenID, parsedURL, clicks, createdAt), nil
+}
+
+func UpdateURL(url *URL) error {
+	err := config.InitDatabase()
+	if err != nil {
+		fmt.Println("Error initializing database:", err)
+		return err
+	}
+
+	fmt.Println("Database initialized successfully")
+
+	_, e := config.DB.Exec("UPDATE urls SET clicks = ? WHERE shorten_id = ?",
+		url.GetClicks(), url.GetShortID())
+
+	defer config.CloseDatabase()
+	return e
+}

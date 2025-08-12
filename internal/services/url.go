@@ -37,3 +37,25 @@ func ConvertToShorterUrl(u *url.URL) (*repository.URL, error) {
 
 	return convertedURL, nil
 }
+
+func GetShortenedURL(shortID string) (*repository.URL, error) {
+
+	// Assuming a function exists in the repository to fetch the URL by its short ID
+	url, err := repository.GetURLByShortID(shortID)
+	if err != nil {
+		return nil, err
+	}
+
+	if url == nil {
+		return nil, nil // Not found
+	}
+
+	// Increment the click count
+	url.IncrementClicks()
+	err = repository.UpdateURL(url)
+	if err != nil {
+		return nil, err
+	}
+
+	return url, nil
+}
