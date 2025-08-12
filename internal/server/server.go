@@ -21,11 +21,6 @@ func (s *Server) Start() error {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("URL Shortener Service is running"))
-	})
-
 	handler.RegisterUrlRoutes(mux)
 
 	srv := &http.Server{

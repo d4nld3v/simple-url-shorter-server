@@ -9,13 +9,26 @@ import (
 
 func RegisterUrlRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/shorten", shortenURLHandler)
+	mux.HandleFunc("/short/", redirectHandler) // For handling redirects with short IDs
 }
 
 func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	handlers := map[string]http.HandlerFunc{
 		"POST": handlePostShortenURL,
-		"GET":  handleGetShortenURL,
+	}
+
+	if handler, ok := handlers[r.Method]; ok {
+		handler(w, r)
+	} else {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func redirectHandler(w http.ResponseWriter, r *http.Request) {
+	handlers := map[string]http.HandlerFunc{
+
+		"GET": redirect,
 	}
 
 	if handler, ok := handlers[r.Method]; ok {
@@ -58,16 +71,37 @@ func handlePostShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
+	// Construir la URL completa del acortador con /short/ prefix
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	host := r.Host
+	if host == "" {
+		host = "localhost:8080" // fallback por defecto
+	}
+
+	shortenedURL := scheme + "://" + host + "/short/" + shortenedUrl.GetShortID()
+
 	json.NewEncoder(w).Encode(map[string]string{
-		"original_url": requestBody.Url,
-		"shortened_id": shortenedUrl.GetShortID(),
-		"message":      "URL received successfully",
+		"original_url":  requestBody.Url,
+		"shortened_id":  shortenedUrl.GetShortID(),
+		"shortened_url": shortenedURL,
+		"message":       "URL shortened successfully",
 	})
 }
 
-func handleGetShortenURL(w http.ResponseWriter, r *http.Request) {
+func redirect(w http.ResponseWriter, r *http.Request) {
 
-	shortID := r.URL.Query().Get("id")
+	// Extraer solo el shortID removiendo el prefijo "/short/"
+	shortID := r.URL.Path[7:] // "/short/" tiene 7 caracteres
+
+	println("Redirecting for short ID:", shortID)
+
+	if len(shortID) > 8 {
+		http.Error(w, "Short ID too long", http.StatusBadRequest)
+		return
+	}
 
 	if shortID == "" {
 		http.Error(w, "Short ID is required", http.StatusBadRequest)

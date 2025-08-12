@@ -11,8 +11,7 @@ func main() {
 
 	//TODO:
 
-	// metodo GET para la redirección de un URL corto a su URL originaL
-	// sumar al contador de clicks ( devolver la url completa no solo la ID)
+	//* Implement get clicks from shortened URL
 
 	// buscar una forma de inicializar la base de datos al iniciar el servidor
 	// y no al guardar un nuevo URL. (BUSCAR ALGÚN PATRON DE DISEÑO)
