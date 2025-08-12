@@ -49,15 +49,15 @@ func (s *URL) GetCreatedAt() time.Time {
 
 func SaveShortenedURL(url *URL) error {
 
-	err := config.InitDatabase()
+	db, err := config.GetDB()
 	if err != nil {
 		fmt.Println("Error initializing database:", err)
 		return err
 	}
 
-	fmt.Println("Database initialized successfully")
+	fmt.Println("Save url to database successfully!")
 
-	_, e := config.DB.Exec("INSERT INTO urls (original_url, shorten_id, clicks, created_at) VALUES (?, ?, ?, ?)",
+	_, e := db.Exec("INSERT INTO urls (original_url, shorten_id, clicks, created_at) VALUES (?, ?, ?, ?)",
 		url.GetOriginalURL(), url.GetShortID(), url.GetClicks(), url.GetCreatedAt())
 
 	defer config.CloseDatabase()
@@ -65,15 +65,15 @@ func SaveShortenedURL(url *URL) error {
 }
 
 func GetURLByShortID(shortenID string) (*URL, error) {
-	err := config.InitDatabase()
+	db, err := config.GetDB()
 	if err != nil {
 		fmt.Println("Error initializing database:", err)
 		return nil, err
 	}
 
-	fmt.Println("Database initialized successfully")
+	fmt.Println("Get url by shorten ID from database successfully!")
 
-	row := config.DB.QueryRow("SELECT original_url, shorten_id, clicks, created_at FROM urls WHERE shorten_id = ?", shortenID)
+	row := db.QueryRow("SELECT original_url, shorten_id, clicks, created_at FROM urls WHERE shorten_id = ?", shortenID)
 
 	var originalURL string
 	var clicks int
@@ -93,15 +93,15 @@ func GetURLByShortID(shortenID string) (*URL, error) {
 }
 
 func UpdateURL(url *URL) error {
-	err := config.InitDatabase()
+	db, err := config.GetDB()
 	if err != nil {
 		fmt.Println("Error initializing database:", err)
 		return err
 	}
 
-	fmt.Println("Database initialized successfully")
+	fmt.Println("Increment clicks for url in database successfully!")
 
-	_, e := config.DB.Exec("UPDATE urls SET clicks = ? WHERE shorten_id = ?",
+	_, e := db.Exec("UPDATE urls SET clicks = ? WHERE shorten_id = ?",
 		url.GetClicks(), url.GetShortID())
 
 	defer config.CloseDatabase()

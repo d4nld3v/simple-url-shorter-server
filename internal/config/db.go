@@ -2,33 +2,66 @@ package config
 
 import (
 	"database/sql"
+	"fmt"
+	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var DB *sql.DB
+// PATRON SINGLETON ( una unica instancia de la base de datos )
+var (
+	DB   *sql.DB
+	once sync.Once
+)
 
-func InitDatabase() error {
+func InitDB() error {
 	var err error
-	DB, err = sql.Open("sqlite3", "./url_shortener.db")
-	if err != nil {
-		return err
+	once.Do(func() {
+		DB, err = sql.Open("sqlite3", "./url_shortener.db")
+		if err != nil {
+			return
+		}
+
+		DB.SetMaxOpenConns(25)
+		DB.SetMaxIdleConns(5)
+
+		if pingErr := DB.Ping(); pingErr != nil {
+			err = pingErr
+			return
+		}
+
+		createTableSQL := `CREATE TABLE IF NOT EXISTS urls (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            original_url TEXT NOT NULL,
+            shorten_id TEXT NOT NULL UNIQUE,
+            clicks INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );`
+		_, err = DB.Exec(createTableSQL)
+
+		if err != nil {
+			fmt.Println("Error creating table:", err)
+			return
+		}
+
+		fmt.Println("Database initialized successfully")
+	})
+
+	return err
+}
+
+func GetDB() (*sql.DB, error) {
+
+	error := InitDB()
+	if error != nil {
+		fmt.Println("Error initializing database:", error)
+		return nil, error
 	}
 
-	// Create table if not exists
-	createTableSQL := `CREATE TABLE IF NOT EXISTS urls (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		original_url TEXT NOT NULL,
-		shorten_id TEXT NOT NULL UNIQUE,
-		clicks INTEGER DEFAULT 0,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	);`
-	_, err = DB.Exec(createTableSQL)
-	if err != nil {
-		return err
+	if DB == nil {
+		return nil, fmt.Errorf("database not initialized")
 	}
-
-	return nil
+	return DB, nil
 }
 
 func CloseDatabase() error {
