@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"time"
@@ -55,13 +56,20 @@ func SaveShortenedURL(url *URL) error {
 		return err
 	}
 
-	fmt.Println("Save url to database successfully!")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	_, e := db.Exec("INSERT INTO urls (original_url, shorten_id, clicks, created_at) VALUES (?, ?, ?, ?)",
+	_, e := db.ExecContext(ctx, "INSERT INTO urls (original_url, shorten_id, clicks, created_at) VALUES (?, ?, ?, ?)",
 		url.GetOriginalURL(), url.GetShortID(), url.GetClicks(), url.GetCreatedAt())
 
-	defer config.CloseDatabase()
-	return e
+	if e != nil {
+		fmt.Println("Error saving url to database:", e)
+		return e
+	}
+
+	fmt.Println("Save url to database successfully!")
+
+	return nil
 }
 
 func GetURLByShortID(shortenID string) (*URL, error) {
@@ -71,9 +79,10 @@ func GetURLByShortID(shortenID string) (*URL, error) {
 		return nil, err
 	}
 
-	fmt.Println("Get url by shorten ID from database successfully!")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	row := db.QueryRow("SELECT original_url, shorten_id, clicks, created_at FROM urls WHERE shorten_id = ?", shortenID)
+	row := db.QueryRowContext(ctx, "SELECT original_url, shorten_id, clicks, created_at FROM urls WHERE shorten_id = ?", shortenID)
 
 	var originalURL string
 	var clicks int
@@ -89,6 +98,8 @@ func GetURLByShortID(shortenID string) (*URL, error) {
 		return nil, parseErr
 	}
 
+	fmt.Println("Get url by shorten ID from database successfully!")
+
 	return NewUrl(shortenID, parsedURL, clicks, createdAt), nil
 }
 
@@ -99,11 +110,18 @@ func UpdateURL(url *URL) error {
 		return err
 	}
 
-	fmt.Println("Increment clicks for url in database successfully!")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	_, e := db.Exec("UPDATE urls SET clicks = ? WHERE shorten_id = ?",
+	_, e := db.ExecContext(ctx, "UPDATE urls SET clicks = ? WHERE shorten_id = ?",
 		url.GetClicks(), url.GetShortID())
 
-	defer config.CloseDatabase()
-	return e
+	if e != nil {
+		fmt.Println("Error updating url in database:", e)
+		return e
+	}
+
+	fmt.Println("Increment clicks for url in database successfully!")
+
+	return nil
 }
