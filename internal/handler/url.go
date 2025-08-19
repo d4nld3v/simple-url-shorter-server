@@ -5,11 +5,12 @@ import (
 	"net/http"
 
 	"github.com/d4nld3v/url-shortener-go/internal/services"
+	"github.com/d4nld3v/url-shortener-go/pkg/middleware"
 )
 
-func RegisterUrlRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/shorten", shortenURLHandler)
-	mux.HandleFunc("/short/", redirectHandler) // For handling redirects with short IDs
+func RegisterUrlRoutes(mux *http.ServeMux, rl *middleware.RateLimiter) {
+	mux.Handle("/shorten", rl.Limit(http.HandlerFunc(shortenURLHandler)))
+	mux.Handle("/short/", rl.Limit(http.HandlerFunc(redirectHandler)))
 }
 
 func shortenURLHandler(w http.ResponseWriter, r *http.Request) {

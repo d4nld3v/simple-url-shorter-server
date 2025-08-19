@@ -5,6 +5,7 @@ import (
 
 	"github.com/d4nld3v/url-shortener-go/internal/config"
 	"github.com/d4nld3v/url-shortener-go/internal/handler"
+	"github.com/d4nld3v/url-shortener-go/pkg/middleware"
 )
 
 type Server struct {
@@ -19,9 +20,11 @@ func New(cfg config.Config) *Server {
 
 func (s *Server) Start() error {
 
+	rl := middleware.NewRateLimiter(s.cfg.RateLimit, s.cfg.BurstLimit)
+
 	mux := http.NewServeMux()
 
-	handler.RegisterUrlRoutes(mux)
+	handler.RegisterUrlRoutes(mux, rl)
 
 	srv := &http.Server{
 		Addr:    s.cfg.Addr,
