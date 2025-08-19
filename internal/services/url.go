@@ -105,6 +105,11 @@ func GetShortenedURL(shortID string) (*repository.URL, error) {
 		return nil, nil // Not found
 	}
 
+	url.IncrementClicks()
+	if err := repository.UpdateURL(url); err != nil {
+		return nil, fmt.Errorf("failed to increment clicks: %w", err)
+	}
+
 	return url, nil
 }
 
@@ -128,4 +133,21 @@ func ValidateShortID(shortID string) error {
 	}
 
 	return nil
+}
+
+func GetURLStats(shortID string) (*repository.URL, error) {
+	if err := ValidateShortID(shortID); err != nil {
+		return nil, fmt.Errorf("invalid short ID: %w", err)
+	}
+
+	stats, err := repository.GetURLStatsByShortID(shortID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get URL stats: %w", err)
+	}
+
+	if stats == nil {
+		return nil, nil // Not found
+	}
+
+	return stats, nil
 }

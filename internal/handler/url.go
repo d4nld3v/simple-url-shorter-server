@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 func RegisterUrlRoutes(mux *http.ServeMux, rl *middleware.RateLimiter) {
 	mux.Handle("/shorten", rl.Limit(http.HandlerFunc(shortenURLHandler)))
 	mux.Handle("/short/", rl.Limit(http.HandlerFunc(redirectHandler)))
+	mux.Handle("/stats/", rl.Limit(http.HandlerFunc(statsHandler)))
 }
 
 func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
@@ -147,4 +149,59 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, u.GetOriginalURL(), http.StatusFound)
+}
+
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	handlers := map[string]http.HandlerFunc{
+		"GET": handleGetStats,
+	}
+
+	if handler, ok := handlers[r.Method]; ok {
+		handler(w, r)
+	} else {
+		SendErrorResponse(w, r, http.StatusMethodNotAllowed, ErrCodeMethodNotAllowed,
+			"Method not allowed", "Only GET method is supported for this endpoint")
+	}
+}
+
+func handleGetStats(w http.ResponseWriter, r *http.Request) {
+	middleware.SetSecurityHeaders(w)
+
+	shortID := strings.TrimPrefix(r.URL.Path, "/stats/")
+
+	fmt.Println("Short ID for stats:", shortID)
+
+	if shortID == "" {
+		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeInvalidShortID,
+			"Invalid short ID", "Short ID cannot be empty")
+		return
+	}
+
+	if err := services.ValidateShortID(shortID); err != nil {
+		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeInvalidShortID,
+			"Invalid short ID", err.Error())
+		return
+	}
+
+	stats, err := services.GetURLStats(shortID)
+	if err != nil {
+		SendErrorResponse(w, r, http.StatusInternalServerError, ErrCodeInternalError,
+			"Failed to retrieve stats", err.Error())
+		return
+	}
+
+	if stats == nil {
+		SendErrorResponse(w, r, http.StatusNotFound, ErrCodeURLNotFound,
+			"Stats not found", "No stats found for the requested short URL")
+		return
+	}
+
+	successResponse := SuccessResponse{
+		Data:      stats.GetClicks(),
+		Message:   "Number of clicks of the URL",
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	}
+
+	SendSuccessResponse(w, successResponse,
+		"URL stats retrieved successfully")
 }

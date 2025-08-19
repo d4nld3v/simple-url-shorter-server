@@ -125,3 +125,31 @@ func UpdateURL(url *URL) error {
 
 	return nil
 }
+
+func GetURLStatsByShortID(shortenID string) (*URL, error) {
+	db, err := config.GetDB()
+	if err != nil {
+		fmt.Println("Error initializing database:", err)
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	row := db.QueryRowContext(ctx, "SELECT clicks , created_at FROM urls WHERE shorten_id = ?", shortenID)
+
+	var clicks int
+	var createdAt time.Time
+	err = row.Scan(&clicks, &createdAt)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Get url stats by shorten ID from database successfully!")
+
+	return &URL{
+		shortenID: shortenID,
+		clicks:    clicks,
+		createdAt: createdAt,
+	}, nil
+}
