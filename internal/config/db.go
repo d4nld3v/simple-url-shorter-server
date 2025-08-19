@@ -39,8 +39,6 @@ func InitDB() error {
         );`
 		_, err = DB.Exec(createTableSQL)
 
-		fmt.Printf("Creating table if not exists: %s\n", createTableSQL)
-
 		if err != nil {
 			fmt.Println("Error creating table:", err)
 			return
