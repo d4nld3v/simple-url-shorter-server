@@ -3,6 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/d4nld3v/url-shortener-go/internal/services"
@@ -15,7 +17,6 @@ func RegisterUrlRoutes(mux *http.ServeMux, rl *middleware.RateLimiter) {
 }
 
 func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
-
 	handlers := map[string]http.HandlerFunc{
 		"POST": handlePostShortenURL,
 	}
@@ -23,104 +24,125 @@ func shortenURLHandler(w http.ResponseWriter, r *http.Request) {
 	if handler, ok := handlers[r.Method]; ok {
 		handler(w, r)
 	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		SendErrorResponse(w, r, http.StatusMethodNotAllowed, ErrCodeMethodNotAllowed,
+			"Method not allowed", "Only POST method is supported for this endpoint")
 	}
 }
 
 func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	handlers := map[string]http.HandlerFunc{
-
 		"GET": redirect,
 	}
 
 	if handler, ok := handlers[r.Method]; ok {
 		handler(w, r)
 	} else {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		SendErrorResponse(w, r, http.StatusMethodNotAllowed, ErrCodeMethodNotAllowed,
+			"Method not allowed", "Only GET method is supported for this endpoint")
 	}
 }
 
 func handlePostShortenURL(w http.ResponseWriter, r *http.Request) {
-
 	middleware.SetSecurityHeaders(w)
+
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "application/json" {
+		SendErrorResponse(w, r, http.StatusUnsupportedMediaType, ErrCodeInvalidInput,
+			"Invalid Content-Type", "Content-Type must be application/json")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1024*1024) // 1MB max
 
 	var requestBody struct {
 		Url string `json:"url"`
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(&requestBody)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeInvalidInput,
+			"Invalid JSON format", err.Error())
 		return
 	}
 
-	if requestBody.Url == "" {
-		http.Error(w, "URL is required", http.StatusBadRequest)
+	if strings.TrimSpace(requestBody.Url) == "" {
+		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeInvalidInput,
+			"URL is required", "The 'url' field cannot be empty")
+		return
+	}
+
+	if len(requestBody.Url) > 2048 {
+		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeURLTooLong,
+			"URL too long", "URL must be less than 2048 characters")
 		return
 	}
 
 	if !utf8.ValidString(requestBody.Url) {
-		http.Error(w, "Invalid URL encoding", http.StatusBadRequest)
+		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeInvalidInput,
+			"Invalid URL encoding", "URL contains invalid UTF-8 characters")
 		return
 	}
 
+	// Validar URL
 	u, err := services.IsValidURL(requestBody.Url)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeInvalidURL,
+			"Invalid URL", err.Error())
 		return
 	}
 
+	// Crear URL acortada
 	shortenedUrl, err := services.ConvertToShorterUrl(u)
-
 	if err != nil {
-		http.Error(w, "Failed to shorten URL: "+err.Error(), http.StatusInternalServerError)
+		SendErrorResponse(w, r, http.StatusInternalServerError, ErrCodeInternalError,
+			"Failed to shorten URL", err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	// Construir la URL completa del acortador con /short/ prefix
+	// Construir URL completa
 	scheme := "http"
 	if r.TLS != nil {
 		scheme = "https"
 	}
 	host := r.Host
 	if host == "" {
-		host = "localhost:8080" // fallback por defecto
+		host = "localhost:8080"
 	}
 
 	shortenedURL := scheme + "://" + host + "/short/" + shortenedUrl.GetShortID()
 
-	json.NewEncoder(w).Encode(map[string]string{
-		"original_url":  requestBody.Url,
-		"shortened_id":  shortenedUrl.GetShortID(),
-		"shortened_url": shortenedURL,
-		"message":       "URL shortened successfully",
-	})
+	responseData := ShortenURLResponse{
+		OriginalURL:  requestBody.Url,
+		ShortenedID:  shortenedUrl.GetShortID(),
+		ShortenedURL: shortenedURL,
+		CreatedAt:    shortenedUrl.GetCreatedAt().Format(time.RFC3339),
+	}
+
+	SendCreatedResponse(w, responseData, "URL shortened successfully")
 }
 
 func redirect(w http.ResponseWriter, r *http.Request) {
-
-	// Extraer solo el shortID removiendo el prefijo "/short/"
+	// Extraer shortID removiendo el prefijo "/short/"
 	shortID := r.URL.Path[7:] // "/short/" tiene 7 caracteres
 
-	println("Redirecting for short ID:", shortID)
-
-	if len(shortID) > 8 {
-		http.Error(w, "Short ID too long", http.StatusBadRequest)
+	if err := services.ValidateShortID(shortID); err != nil {
+		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeInvalidShortID,
+			"Invalid short ID", err.Error())
 		return
 	}
-
-	if shortID == "" {
-		http.Error(w, "Short ID is required", http.StatusBadRequest)
-		return
-	}
-
 	u, err := services.GetShortenedURL(shortID)
+	if err != nil {
+		SendErrorResponse(w, r, http.StatusInternalServerError, ErrCodeInternalError,
+			"Failed to retrieve URL", err.Error())
+		return
+	}
 
-	if err != nil || u == nil {
-		http.Error(w, "Failed to retrieve shortened URL: "+err.Error(), http.StatusInternalServerError)
+	if u == nil {
+		SendErrorResponse(w, r, http.StatusNotFound, ErrCodeURLNotFound,
+			"URL not found", "The requested short URL does not exist")
 		return
 	}
 

@@ -89,7 +89,7 @@ func normalizeURL(u *url.URL) *url.URL {
 }
 
 func GetShortenedURL(shortID string) (*repository.URL, error) {
-	if err := validateShortID(shortID); err != nil {
+	if err := ValidateShortID(shortID); err != nil {
 		return nil, fmt.Errorf("invalid short ID: %w", err)
 	}
 
@@ -105,27 +105,7 @@ func GetShortenedURL(shortID string) (*repository.URL, error) {
 	return url, nil
 }
 
-func IncrementURLClicks(shortID string) error {
-	if err := validateShortID(shortID); err != nil {
-		return fmt.Errorf("invalid short ID: %w", err)
-	}
-
-	url, err := repository.GetURLByShortID(shortID)
-	if err != nil {
-		return fmt.Errorf("failed to get URL: %w", err)
-	}
-
-	if url == nil {
-		return fmt.Errorf("URL not found")
-	}
-
-	// Incrementar y actualizar de forma atómica
-	url.IncrementClicks()
-	return repository.UpdateURL(url)
-}
-
-// Validación de shortID
-func validateShortID(shortID string) error {
+func ValidateShortID(shortID string) error {
 	if strings.TrimSpace(shortID) == "" {
 		return fmt.Errorf("short ID cannot be empty")
 	}
