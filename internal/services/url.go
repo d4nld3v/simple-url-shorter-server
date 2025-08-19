@@ -1,8 +1,10 @@
 package services
 
 import (
-	"crypto/md5"
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -11,51 +13,136 @@ import (
 )
 
 func shortenURL(url *url.URL) string {
+	// Usar SHA-256 + timestamp + random para evitar colisiones
+	timestamp := fmt.Sprintf("%d", time.Now().UnixNano())
+	randomBytes := make([]byte, 8)
+	rand.Read(randomBytes)
 
-	hash := md5.Sum([]byte(url.String()))
+	input := url.String() + timestamp + string(randomBytes)
+	hash := sha256.Sum256([]byte(input))
 
 	encoded := base64.URLEncoding.EncodeToString(hash[:])
 
 	shortID := encoded[:8]
 	shortID = strings.ReplaceAll(shortID, "-", "x")
 	shortID = strings.ReplaceAll(shortID, "_", "y")
+	shortID = strings.ReplaceAll(shortID, "+", "z")
 
 	return shortID
 }
 
 func ConvertToShorterUrl(u *url.URL) (*repository.URL, error) {
 
-	shortID := shortenURL(u)
+	normalizedURL := normalizeURL(u)
 
-	convertedURL := repository.NewUrl(shortID, u, 0, time.Now())
+	var shortID string
+	var convertedURL *repository.URL
+	maxRetries := 5
+
+	for i := 0; i < maxRetries; i++ {
+		shortID = shortenURL(normalizedURL)
+
+		existing, err := repository.GetURLByShortID(shortID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check existing short ID: %w", err)
+		}
+
+		if existing == nil {
+			// shortID disponible
+			break
+		}
+
+		if i == maxRetries-1 {
+			return nil, fmt.Errorf("failed to generate unique short ID after %d attempts", maxRetries)
+		}
+	}
+
+	convertedURL = repository.NewUrl(shortID, normalizedURL, 0, time.Now())
 
 	err := repository.SaveShortenedURL(convertedURL)
 	if err != nil {
-		// Handle error (e.g., log it)
-		return nil, err
+		return nil, fmt.Errorf("failed to save shortened URL: %w", err)
 	}
 
 	return convertedURL, nil
 }
 
-func GetShortenedURL(shortID string) (*repository.URL, error) {
+// normalizeURL estandariza las URLs para evitar duplicados
+func normalizeURL(u *url.URL) *url.URL {
+	normalized := *u
 
-	// Assuming a function exists in the repository to fetch the URL by its short ID
+	normalized.Scheme = strings.ToLower(normalized.Scheme)
+	normalized.Host = strings.ToLower(normalized.Host)
+
+	if (normalized.Scheme == "http" && strings.HasSuffix(normalized.Host, ":80")) ||
+		(normalized.Scheme == "https" && strings.HasSuffix(normalized.Host, ":443")) {
+		normalized.Host = normalized.Host[:strings.LastIndex(normalized.Host, ":")]
+	}
+
+	normalized.Fragment = ""
+
+	if normalized.Path == "" {
+		normalized.Path = "/"
+	}
+
+	return &normalized
+}
+
+func GetShortenedURL(shortID string) (*repository.URL, error) {
+	if err := validateShortID(shortID); err != nil {
+		return nil, fmt.Errorf("invalid short ID: %w", err)
+	}
+
 	url, err := repository.GetURLByShortID(shortID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get URL: %w", err)
 	}
 
 	if url == nil {
 		return nil, nil // Not found
 	}
 
-	// Increment the click count
-	url.IncrementClicks()
-	err = repository.UpdateURL(url)
-	if err != nil {
-		return nil, err
+	return url, nil
+}
+
+func IncrementURLClicks(shortID string) error {
+	if err := validateShortID(shortID); err != nil {
+		return fmt.Errorf("invalid short ID: %w", err)
 	}
 
-	return url, nil
+	url, err := repository.GetURLByShortID(shortID)
+	if err != nil {
+		return fmt.Errorf("failed to get URL: %w", err)
+	}
+
+	if url == nil {
+		return fmt.Errorf("URL not found")
+	}
+
+	// Incrementar y actualizar de forma atómica
+	url.IncrementClicks()
+	return repository.UpdateURL(url)
+}
+
+// Validación de shortID
+func validateShortID(shortID string) error {
+	if strings.TrimSpace(shortID) == "" {
+		return fmt.Errorf("short ID cannot be empty")
+	}
+
+	if len(shortID) < 1 || len(shortID) > 10 {
+		return fmt.Errorf("short ID must be between 1 and 10 characters")
+	}
+
+	// Solo caracteres alfanuméricos y caracteres seguros
+	for _, char := range shortID {
+		if !((char >= 'a' && char <= 'z') ||
+			(char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') ||
+			char == 'x' || char == 'y' || char == 'z') {
+			return fmt.Errorf("short ID contains invalid characters")
+		}
+	}
+
+	return nil
 }

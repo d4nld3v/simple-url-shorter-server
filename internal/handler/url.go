@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"unicode/utf8"
 
 	"github.com/d4nld3v/url-shortener-go/internal/services"
 	"github.com/d4nld3v/url-shortener-go/pkg/middleware"
@@ -41,6 +42,8 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 
 func handlePostShortenURL(w http.ResponseWriter, r *http.Request) {
 
+	middleware.SetSecurityHeaders(w)
+
 	var requestBody struct {
 		Url string `json:"url"`
 	}
@@ -53,6 +56,11 @@ func handlePostShortenURL(w http.ResponseWriter, r *http.Request) {
 
 	if requestBody.Url == "" {
 		http.Error(w, "URL is required", http.StatusBadRequest)
+		return
+	}
+
+	if !utf8.ValidString(requestBody.Url) {
+		http.Error(w, "Invalid URL encoding", http.StatusBadRequest)
 		return
 	}
 
