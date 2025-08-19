@@ -8,7 +8,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// PATRON SINGLETON ( una unica instancia de la base de datos )
+// DB is a singleton instance of the database connection
 var (
 	DB   *sql.DB
 	once sync.Once

@@ -28,7 +28,6 @@ func NewRateLimiter(rate, burst int) *RateLimiter {
 		cleanupDone: make(chan bool),
 	}
 
-	// Iniciar rutina de limpieza en background
 	go rl.startCleanup()
 
 	return rl
@@ -49,7 +48,7 @@ func (rl *RateLimiter) Allow(ip string) bool {
 	}
 
 	now := time.Now()
-	v.lastSeen = now // Actualizar última vez visto
+	v.lastSeen = now
 	elapsed := now.Sub(v.lastRefill)
 	refillTokens := elapsed.Seconds() * float64(rl.rate)
 

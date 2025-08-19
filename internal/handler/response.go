@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// ErrorResponse estructura estándar para errores
 type ErrorResponse struct {
 	Error     ErrorDetail `json:"error"`
 	Timestamp string      `json:"timestamp"`
@@ -14,21 +13,18 @@ type ErrorResponse struct {
 	Method    string      `json:"method"`
 }
 
-// ErrorDetail contiene los detalles del error
 type ErrorDetail struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 	Details string `json:"details,omitempty"`
 }
 
-// SuccessResponse estructura estándar para respuestas exitosas
 type SuccessResponse struct {
 	Data      interface{} `json:"data"`
 	Message   string      `json:"message"`
 	Timestamp string      `json:"timestamp"`
 }
 
-// ShortenURLResponse respuesta específica para URL acortada
 type ShortenURLResponse struct {
 	OriginalURL  string `json:"original_url"`
 	ShortenedID  string `json:"shortened_id"`
@@ -36,7 +32,6 @@ type ShortenURLResponse struct {
 	CreatedAt    string `json:"created_at"`
 }
 
-// ErrorCodes constantes para códigos de error
 const (
 	ErrCodeInvalidInput      = "INVALID_INPUT"
 	ErrCodeURLNotFound       = "URL_NOT_FOUND"
@@ -49,7 +44,6 @@ const (
 	ErrCodeInvalidShortID    = "INVALID_SHORT_ID"
 )
 
-// SendErrorResponse envía una respuesta de error estandarizada
 func SendErrorResponse(w http.ResponseWriter, r *http.Request, statusCode int, errorCode, message, details string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
@@ -68,7 +62,6 @@ func SendErrorResponse(w http.ResponseWriter, r *http.Request, statusCode int, e
 	json.NewEncoder(w).Encode(errorResponse)
 }
 
-// SendSuccessResponse envía una respuesta exitosa estandarizada
 func SendSuccessResponse(w http.ResponseWriter, data interface{}, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -82,7 +75,6 @@ func SendSuccessResponse(w http.ResponseWriter, data interface{}, message string
 	json.NewEncoder(w).Encode(successResponse)
 }
 
-// SendCreatedResponse envía una respuesta 201 Created
 func SendCreatedResponse(w http.ResponseWriter, data interface{}, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

@@ -11,7 +11,6 @@ import (
 )
 
 func IsValidURL(raw string) (*url.URL, error) {
-	// Validación básica de longitud
 	if len(raw) > 2048 {
 		return nil, fmt.Errorf("url is too long (max 2048 characters)")
 	}
@@ -85,7 +84,6 @@ func isHttpURL(u *url.URL) bool {
 func isPublicIP(u *url.URL) bool {
 	hostname := u.Hostname()
 
-	// Lista de hosts bloqueados
 	blockedHosts := []string{
 		"localhost", "127.0.0.1", "0.0.0.0", "::1",
 		"169.254.", "224.", "239.", "255.255.255.255",
@@ -108,14 +106,12 @@ func isPublicIP(u *url.URL) bool {
 			return false
 		}
 
-		// Verificar rangos adicionales peligrosos
 		if ip.To4() != nil {
 			ipv4 := ip.To4()
-			// Bloquear 169.254.x.x (link-local)
+
 			if ipv4[0] == 169 && ipv4[1] == 254 {
 				return false
 			}
-			// Bloquear multicast (224.0.0.0 - 239.255.255.255)
 			if ipv4[0] >= 224 && ipv4[0] <= 239 {
 				return false
 			}

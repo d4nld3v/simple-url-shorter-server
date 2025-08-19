@@ -13,7 +13,7 @@ import (
 )
 
 func shortenURL(url *url.URL) string {
-	// Usar SHA-256 + timestamp + random para evitar colisiones
+	// use SHA-256 + timestamp + random bytes to generate a unique short ID
 	timestamp := fmt.Sprintf("%d", time.Now().UnixNano())
 	randomBytes := make([]byte, 8)
 	rand.Read(randomBytes)
@@ -49,7 +49,7 @@ func ConvertToShorterUrl(u *url.URL) (*repository.URL, error) {
 		existing, _ := repository.GetURLByShortID(shortID)
 
 		if existing == nil {
-			// shortID disponible
+			// shortID available
 			break
 		}
 
@@ -70,7 +70,7 @@ func ConvertToShorterUrl(u *url.URL) (*repository.URL, error) {
 	return convertedURL, nil
 }
 
-// normalizeURL estandariza las URLs para evitar duplicados
+// normalizeURL standardizes URLs to avoid duplicates
 func normalizeURL(u *url.URL) *url.URL {
 	normalized := *u
 
@@ -122,7 +122,7 @@ func ValidateShortID(shortID string) error {
 		return fmt.Errorf("short ID must be between 1 and 10 characters")
 	}
 
-	// Solo caracteres alfanuméricos y caracteres seguros
+	// Check for valid characters: alphanumeric and 'x', 'y', 'z'
 	for _, char := range shortID {
 		if !((char >= 'a' && char <= 'z') ||
 			(char >= 'A' && char <= 'Z') ||

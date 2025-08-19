@@ -88,7 +88,6 @@ func handlePostShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validar URL
 	u, err := services.IsValidURL(requestBody.Url)
 	if err != nil {
 		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeInvalidURL,
@@ -96,7 +95,6 @@ func handlePostShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Crear URL acortada
 	shortenedUrl, err := services.ConvertToShorterUrl(u)
 	if err != nil {
 		SendErrorResponse(w, r, http.StatusInternalServerError, ErrCodeInternalError,
@@ -104,7 +102,6 @@ func handlePostShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Construir URL completa
 	scheme := "http"
 	if r.TLS != nil {
 		scheme = "https"
@@ -127,8 +124,7 @@ func handlePostShortenURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func redirect(w http.ResponseWriter, r *http.Request) {
-	// Extraer shortID removiendo el prefijo "/short/"
-	shortID := r.URL.Path[7:] // "/short/" tiene 7 caracteres
+	shortID := r.URL.Path[7:] // "/short/" has 7 characters
 
 	if err := services.ValidateShortID(shortID); err != nil {
 		SendErrorResponse(w, r, http.StatusBadRequest, ErrCodeInvalidShortID,
