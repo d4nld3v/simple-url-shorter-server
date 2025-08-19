@@ -12,7 +12,6 @@ A fast and secure URL shortening service built with Go, designed with clean arch
 - 🗄️ **SQLite database** - Persistent storage with connection pooling
 - 🔐 **Security headers** - HTTP security headers implemented
 - 📝 **Standardized responses** - API with consistent JSON format and clear error codes
-- 📊 **Structured logging** - Complete request traceability with JSON logs
 
 ## 🏗️ Architecture
 
@@ -38,16 +37,9 @@ internal/                # Internal application code
     └── server.go        # Route and middleware setup
 
 pkg/                     # Reusable packages
-├── logger/              # Structured logging system
-│   └── logger.go        # JSON logger with multiple levels
 └── middleware/          # Reusable middlewares
     ├── api.go           # Security headers
-    ├── logging.go       # HTTP request logging
     └── ratelimit.go     # Rate limiting with token bucket algorithm
-
-docs/                    # Documentation
-├── LOGGING.md           # Logging system documentation
-└── PATH_PARAMETERS.md   # Parameter documentation
 ```
 
 ## 🔒 Security Features
@@ -67,32 +59,6 @@ docs/                    # Documentation
 - Control and potentially dangerous characters
 - Length and data format limits
 - Timeouts to prevent DoS attacks
-
-## 📊 Logging System
-
-### **Structured JSON Logging:**
-
-```json
-{
-  "time": "2025-08-19T10:30:00.123Z",
-  "level": "INFO",
-  "msg": "Request completed successfully",
-  "method": "POST",
-  "path": "/shorten",
-  "client_ip": "192.168.1.100",
-  "status_code": 201,
-  "duration_ms": 45,
-  "request_id": "20250819103000-abc123"
-}
-```
-
-### **Log Levels:**
-
-- **DEBUG** - Detailed information for development
-- **INFO** - General operational information
-- **WARN** - Warning conditions that don't affect operation
-- **ERROR** - Error conditions that affect operation
-- **FATAL** - Critical errors that terminate the application
 
 ### **Automatic Metrics:**
 
@@ -193,7 +159,7 @@ All error responses follow the standard format:
 
 The service is configured via environment variables:
 
-```bash
+````bash
 # Server port
 ADDR=:8080
 
@@ -204,11 +170,6 @@ BURST_LIMIT=10          # Maximum burst allowed
 # Database
 DB_SOURCE=./url_shortener.db
 
-# Logging
-LOG_LEVEL=INFO          # DEBUG, INFO, WARN, ERROR, FATAL
-LOG_FILE=logs/app.log   # Log file path (optional)
-LOG_FORMAT=json         # Log format (json, text)
-```
 
 ## 🧪 Testing
 
@@ -221,7 +182,7 @@ go test -cover ./...
 
 # Integration tests
 go test -tags=integration ./...
-```
+````
 
 ## 📊 Usage Examples
 
@@ -237,21 +198,6 @@ curl -X POST http://localhost:8080/shorten \
 
 ```bash
 curl -L http://localhost:8080/short/abc123xy
-```
-
-## � Monitoring & Logs
-
-### **Log Analysis**
-
-```bash
-# Find errors in the last 24 hours
-grep '"level":"ERROR"' logs/app.log | tail -100
-
-# Rate limiting events
-grep '"status_code":429' logs/app.log
-
-# Performance metrics (slow requests >1000ms)
-grep '"duration_ms"' logs/app.log | awk -F'"duration_ms":' '{print $2}' | awk -F',' '{if($1>1000) print}' | wc -l
 ```
 
 ### **Health Monitoring**
@@ -286,14 +232,12 @@ grep '"duration_ms"' logs/app.log | awk -F'"duration_ms":' '{print $2}' | awk -F
 - **Redirects**: < 10ms
 - **Rate limit**: 100 requests/min per IP by default
 - **Database**: Connection pooling with maximum 25 connections
-- **Logging**: Structured JSON logs with request correlation
 
 ## 🛠️ Technologies Used
 
 - **[Go](https://golang.org/)** - Programming language
 - **[SQLite](https://sqlite.org/)** - Embedded database
 - **[net/http](https://pkg.go.dev/net/http)** - Native HTTP server
-- **[slog](https://pkg.go.dev/log/slog)** - Structured logging
 - **Clean Architecture** - Layer separation and responsibilities
 
 ## 📝 License
