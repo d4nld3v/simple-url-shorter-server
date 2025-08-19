@@ -35,6 +35,8 @@ func ConvertToShorterUrl(u *url.URL) (*repository.URL, error) {
 
 	normalizedURL := normalizeURL(u)
 
+	fmt.Println("Normalized URL:", normalizedURL.String())
+
 	var shortID string
 	var convertedURL *repository.URL
 	maxRetries := 5
@@ -42,10 +44,9 @@ func ConvertToShorterUrl(u *url.URL) (*repository.URL, error) {
 	for i := 0; i < maxRetries; i++ {
 		shortID = shortenURL(normalizedURL)
 
-		existing, err := repository.GetURLByShortID(shortID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to check existing short ID: %w", err)
-		}
+		fmt.Println("Attempt", i+1, "to generate short ID:", shortID)
+
+		existing, _ := repository.GetURLByShortID(shortID)
 
 		if existing == nil {
 			// shortID disponible
@@ -56,6 +57,8 @@ func ConvertToShorterUrl(u *url.URL) (*repository.URL, error) {
 			return nil, fmt.Errorf("failed to generate unique short ID after %d attempts", maxRetries)
 		}
 	}
+
+	fmt.Println("Generated short ID:", shortID)
 
 	convertedURL = repository.NewUrl(shortID, normalizedURL, 0, time.Now())
 
